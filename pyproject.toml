@@ -1,0 +1,15 @@
+[project]
+name = "kanbox"
+version = "0.1.0"
+description = "Turn a Trello JSON export into a plain-text markdown or CSV snapshot"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "amandaj10" }]
+
+[project.scripts]
+kanbox = "kanbox.cli:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
