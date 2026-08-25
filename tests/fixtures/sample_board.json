@@ -1,0 +1,61 @@
+{
+  "name": "Sprint planning",
+  "lists": [
+    { "id": "list1", "name": "Backlog" },
+    { "id": "list2", "name": "In progress" },
+    { "id": "list3", "name": "Done" },
+    { "id": "list4", "name": "Blocked" }
+  ],
+  "cards": [
+    {
+      "id": "card1",
+      "name": "Set up staging environment",
+      "desc": "",
+      "idList": "list1",
+      "labels": [{ "name": "infra", "color": "blue" }],
+      "due": null,
+      "closed": false,
+      "shortUrl": "https://trello.com/c/card1"
+    },
+    {
+      "id": "card2",
+      "name": "Write onboarding docs",
+      "desc": "",
+      "idList": "list1",
+      "labels": [],
+      "due": null,
+      "closed": false,
+      "shortUrl": "https://trello.com/c/card2"
+    },
+    {
+      "id": "card3",
+      "name": "Fix pagination bug",
+      "desc": "Users report the third page is missing on mobile.",
+      "idList": "list2",
+      "labels": [{ "name": "", "color": "red" }],
+      "due": "2026-08-28T00:00:00.000Z",
+      "closed": false,
+      "shortUrl": "https://trello.com/c/card3"
+    },
+    {
+      "id": "card4",
+      "name": "Ship v1.2",
+      "desc": "",
+      "idList": "list3",
+      "labels": [{ "name": "", "color": "" }],
+      "due": null,
+      "closed": true,
+      "shortUrl": "https://trello.com/c/card4"
+    },
+    {
+      "id": "card5",
+      "name": "Orphaned card from a deleted list",
+      "desc": "",
+      "idList": "list-does-not-exist",
+      "labels": [],
+      "due": null,
+      "closed": false,
+      "url": "https://trello.com/c/card5/long-form-url"
+    }
+  ]
+}

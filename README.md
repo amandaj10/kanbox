@@ -65,6 +65,15 @@ print(render_markdown(board))
 so it's also a reasonable starting point for writing your own exporter (say,
 to a static site or a different task tracker's import format).
 
+## Development
+
+Tests use the standard library's `unittest` against fixture JSON under
+`tests/fixtures/`, no test runner to install:
+
+```
+python -m unittest discover
+```
+
 ## Status
 
 Only Trello's export format is supported right now. No third-party
