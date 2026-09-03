@@ -57,5 +57,17 @@
       "closed": false,
       "url": "https://trello.com/c/card5/long-form-url"
     }
+  ],
+  "checklists": [
+    {
+      "id": "checklist1",
+      "name": "Rollout steps",
+      "idCard": "card3",
+      "pos": 1,
+      "checkItems": [
+        { "id": "item2", "name": "Deploy fix", "state": "incomplete", "pos": 2 },
+        { "id": "item1", "name": "Reproduce locally", "state": "complete", "pos": 1 }
+      ]
+    }
   ]
 }

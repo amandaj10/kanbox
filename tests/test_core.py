@@ -4,7 +4,7 @@ import json
 import unittest
 from pathlib import Path
 
-from kanbox.core import parse_trello_export, render_csv, render_markdown
+from kanbox.core import ChecklistItem, parse_trello_export, render_csv, render_markdown
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sample_board.json"
 
@@ -51,6 +51,20 @@ class ParseTrelloExportTests(unittest.TestCase):
         board = parse_trello_export({"lists": [], "cards": []})
         self.assertEqual(board.name, "untitled board")
 
+    def test_checklist_items_are_attached_to_their_card_in_pos_order(self):
+        card = next(c for c in self.board.cards if c.name == "Fix pagination bug")
+        self.assertEqual(
+            card.checklist_items,
+            [
+                ChecklistItem(name="Reproduce locally", checked=True),
+                ChecklistItem(name="Deploy fix", checked=False),
+            ],
+        )
+
+    def test_card_without_checklist_has_empty_list(self):
+        card = next(c for c in self.board.cards if c.name == "Ship v1.2")
+        self.assertEqual(card.checklist_items, [])
+
 
 class RenderMarkdownTests(unittest.TestCase):
     def setUp(self):
@@ -73,6 +87,8 @@ class RenderMarkdownTests(unittest.TestCase):
             "  - labels: red\n"
             "  - due: 2026-08-28T00:00:00.000Z\n"
             "    > Users report the third page is missing on mobile.\n"
+            "  - [x] Reproduce locally\n"
+            "  - [ ] Deploy fix\n"
             "\n"
             "## (unknown list)\n"
             "\n"
@@ -97,7 +113,9 @@ class RenderCsvTests(unittest.TestCase):
 
     def test_default_output_skips_closed_cards(self):
         rows = self._rows(render_csv(self.board))
-        self.assertEqual(rows[0], ["list", "card", "labels", "due", "closed", "url"])
+        self.assertEqual(
+            rows[0], ["list", "card", "labels", "due", "closed", "checklist", "url"]
+        )
         self.assertEqual(len(rows), 5)  # header + 4 non-closed cards
         self.assertNotIn("Ship v1.2", [row[1] for row in rows])
 
@@ -117,9 +135,15 @@ class RenderCsvTests(unittest.TestCase):
                 "red",
                 "2026-08-28T00:00:00.000Z",
                 "no",
+                "1/2",
                 "https://trello.com/c/card3",
             ],
         )
+
+    def test_checklist_column_blank_when_card_has_no_checklist(self):
+        rows = self._rows(render_csv(self.board))
+        row = next(row for row in rows if row[1] == "Write onboarding docs")
+        self.assertEqual(row[5], "")
 
 
 if __name__ == "__main__":

@@ -7,6 +7,12 @@ from typing import Optional
 
 
 @dataclass
+class ChecklistItem:
+    name: str
+    checked: bool = False
+
+
+@dataclass
 class Card:
     name: str
     list_name: str
@@ -15,6 +21,7 @@ class Card:
     due: Optional[str] = None
     closed: bool = False
     url: str = ""
+    checklist_items: list = field(default_factory=list)
 
 
 @dataclass
@@ -37,6 +44,19 @@ def parse_trello_export(data: dict) -> Board:
         lists_by_id[lst["id"]] = lst["name"]
         list_order.append(lst["name"])
 
+    # Checklists live in their own top-level array, tied to a card by idCard,
+    # each carrying its own checkItems. A card's checklists aren't kept
+    # separate here -- their items are flattened onto the card in checklist
+    # order, which matches the rest of this library's flat Card model.
+    checklist_items_by_card = {}
+    checklists = sorted(data.get("checklists", []), key=lambda cl: cl.get("pos", 0))
+    for cl in checklists:
+        items = sorted(cl.get("checkItems", []), key=lambda item: item.get("pos", 0))
+        checklist_items_by_card.setdefault(cl.get("idCard"), []).extend(
+            ChecklistItem(name=item.get("name", ""), checked=item.get("state") == "complete")
+            for item in items
+        )
+
     cards = []
     for c in data.get("cards", []):
         list_name = lists_by_id.get(c.get("idList"), "(unknown list)")
@@ -50,6 +70,7 @@ def parse_trello_export(data: dict) -> Board:
                 due=c.get("due"),
                 closed=bool(c.get("closed", False)),
                 url=c.get("shortUrl") or c.get("url", ""),
+                checklist_items=checklist_items_by_card.get(c.get("id"), []),
             )
         )
 
@@ -80,6 +101,9 @@ def render_markdown(board: Board, include_closed: bool = False) -> str:
             if card.description:
                 indented = card.description.strip().replace("\n", "\n    ")
                 lines.append(f"    > {indented}")
+            for item in card.checklist_items:
+                box = "x" if item.checked else " "
+                lines.append(f"  - [{box}] {item.name}")
         lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"
@@ -88,10 +112,15 @@ def render_markdown(board: Board, include_closed: bool = False) -> str:
 def render_csv(board: Board, include_closed: bool = False) -> str:
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["list", "card", "labels", "due", "closed", "url"])
+    writer.writerow(["list", "card", "labels", "due", "closed", "checklist", "url"])
     for card in board.cards:
         if card.closed and not include_closed:
             continue
+        if card.checklist_items:
+            checked = sum(1 for item in card.checklist_items if item.checked)
+            checklist = f"{checked}/{len(card.checklist_items)}"
+        else:
+            checklist = ""
         writer.writerow(
             [
                 card.list_name,
@@ -99,6 +128,7 @@ def render_csv(board: Board, include_closed: bool = False) -> str:
                 "; ".join(card.labels),
                 card.due or "",
                 "yes" if card.closed else "no",
+                checklist,
                 card.url,
             ]
         )

@@ -7,7 +7,7 @@ deleting it, or if you want to diff a board's state over time in git.
 
 `kanbox` reads that JSON export and turns it into a plain markdown or CSV
 snapshot: one section per list, one bullet per card, with labels, due dates,
-and descriptions kept.
+descriptions, and checklist items kept.
 
 ## Usage
 
@@ -33,13 +33,17 @@ $ python -m kanbox board.json
 - Fix pagination bug
   - due: 2026-08-28T00:00:00.000Z
     > Users report the third page is missing on mobile.
+  - [x] Reproduce locally
+  - [ ] Deploy fix
 
 ## Done
 
 - ~~Ship v1.2~~
 ```
 
-CSV is useful if you want to load the board into a spreadsheet instead:
+CSV is useful if you want to load the board into a spreadsheet instead. Each
+card's checklist progress is collapsed into a single `checked/total` column
+rather than one row per item:
 
 ```
 python -m kanbox board.json --format csv -o board.csv
