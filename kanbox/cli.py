@@ -3,20 +3,32 @@ import json
 import sys
 from pathlib import Path
 
-from .core import parse_trello_export, render_csv, render_markdown
+from .core import parse_asana_export, parse_trello_export, render_csv, render_markdown
 
 RENDERERS = {
     "markdown": render_markdown,
     "csv": render_csv,
 }
 
+PARSERS = {
+    "trello": parse_trello_export,
+    "asana": parse_asana_export,
+}
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="kanbox",
-        description="Convert a Trello JSON export into a plain-text snapshot.",
+        description="Convert a Trello or Asana JSON export into a plain-text snapshot.",
     )
-    parser.add_argument("input", type=Path, help="path to a Trello JSON export")
+    parser.add_argument("input", type=Path, help="path to a board export")
+    parser.add_argument(
+        "-s",
+        "--source",
+        choices=sorted(PARSERS),
+        default="trello",
+        help="export format to read (default: trello)",
+    )
     parser.add_argument(
         "-f",
         "--format",
@@ -48,7 +60,8 @@ def main(argv=None) -> int:
         print(f"kanbox: could not read {args.input}: {exc}", file=sys.stderr)
         return 1
 
-    board = parse_trello_export(data)
+    parse = PARSERS[args.source]
+    board = parse(data)
     render = RENDERERS[args.format]
     output = render(board, include_closed=args.include_closed)
 

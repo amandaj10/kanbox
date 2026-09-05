@@ -7,11 +7,13 @@ from pathlib import Path
 from kanbox.cli import build_parser, main
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sample_board.json"
+ASANA_FIXTURE = Path(__file__).parent / "fixtures" / "sample_asana_board.json"
 
 
 class BuildParserTests(unittest.TestCase):
     def test_defaults(self):
         args = build_parser().parse_args([str(FIXTURE)])
+        self.assertEqual(args.source, "trello")
         self.assertEqual(args.format, "markdown")
         self.assertIsNone(args.output)
         self.assertFalse(args.include_closed)
@@ -19,6 +21,10 @@ class BuildParserTests(unittest.TestCase):
     def test_unknown_format_is_rejected(self):
         with self.assertRaises(SystemExit):
             build_parser().parse_args([str(FIXTURE), "-f", "xml"])
+
+    def test_unknown_source_is_rejected(self):
+        with self.assertRaises(SystemExit):
+            build_parser().parse_args([str(FIXTURE), "-s", "jira"])
 
 
 class MainTests(unittest.TestCase):
@@ -28,6 +34,13 @@ class MainTests(unittest.TestCase):
             status = main([str(FIXTURE)])
         self.assertEqual(status, 0)
         self.assertTrue(buf.getvalue().startswith("# Sprint planning\n"))
+
+    def test_asana_source_reaches_the_parser(self):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            status = main([str(ASANA_FIXTURE), "--source", "asana"])
+        self.assertEqual(status, 0)
+        self.assertTrue(buf.getvalue().startswith("# Marketing launch\n"))
 
     def test_csv_format_goes_to_stdout(self):
         buf = io.StringIO()

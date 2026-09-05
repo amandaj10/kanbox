@@ -51,10 +51,16 @@ python -m kanbox board.json --format csv -o board.csv
 
 Archived cards are skipped by default; pass `--include-closed` to keep them.
 
+Asana's project export is also supported -- pass `--source asana`:
+
+```
+python -m kanbox project.json --source asana --format csv -o project.csv
+```
+
 ## Library
 
-The CLI is a thin wrapper around three functions, which you can use directly
-if you want to do something other than print markdown or CSV:
+The CLI is a thin wrapper around a parser and a renderer, which you can use
+directly if you want to do something other than print markdown or CSV:
 
 ```python
 import json
@@ -65,9 +71,10 @@ board = parse_trello_export(data)
 print(render_markdown(board))
 ```
 
-`parse_trello_export` returns a `Board` with a flat list of `Card` objects,
-so it's also a reasonable starting point for writing your own exporter (say,
-to a static site or a different task tracker's import format).
+Both `parse_trello_export` and `parse_asana_export` return the same `Board`
+of flat `Card` objects, so either one is a reasonable starting point for
+writing your own exporter (say, to a static site or a different task
+tracker's import format).
 
 ## Development
 
@@ -80,5 +87,5 @@ python -m unittest discover
 
 ## Status
 
-Only Trello's export format is supported right now. No third-party
-dependencies, standard library only.
+Trello and Asana export formats are supported so far, both feeding the same
+`Board` model. No third-party dependencies, standard library only.

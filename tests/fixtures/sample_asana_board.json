@@ -1,0 +1,64 @@
+{
+  "name": "Marketing launch",
+  "sections": [
+    { "gid": "sec1", "name": "To do" },
+    { "gid": "sec2", "name": "Doing" },
+    { "gid": "sec3", "name": "Done" }
+  ],
+  "tasks": [
+    {
+      "gid": "task1",
+      "name": "Draft landing page copy",
+      "notes": "",
+      "completed": false,
+      "due_on": null,
+      "tags": [{ "name": "content" }],
+      "permalink_url": "https://app.asana.com/0/1/task1",
+      "memberships": [{ "section": { "gid": "sec1", "name": "To do" } }]
+    },
+    {
+      "gid": "task2",
+      "name": "Brief the design team",
+      "notes": "",
+      "completed": false,
+      "due_on": null,
+      "tags": [{ "name": "" }],
+      "permalink_url": "https://app.asana.com/0/1/task2",
+      "memberships": [{ "section": { "gid": "sec1", "name": "To do" } }]
+    },
+    {
+      "gid": "task3",
+      "name": "Fix tracking pixel",
+      "notes": "Pixel fires twice on Safari.",
+      "completed": false,
+      "due_on": "2026-09-10",
+      "tags": [],
+      "permalink_url": "https://app.asana.com/0/1/task3",
+      "memberships": [{ "section": { "gid": "sec2", "name": "Doing" } }],
+      "subtasks": [
+        { "name": "Reproduce in Safari", "completed": true },
+        { "name": "Ship fix", "completed": false }
+      ]
+    },
+    {
+      "gid": "task4",
+      "name": "Launch announcement email",
+      "notes": "",
+      "completed": true,
+      "due_on": null,
+      "tags": [],
+      "permalink_url": "https://app.asana.com/0/1/task4",
+      "memberships": [{ "section": { "gid": "sec3", "name": "Done" } }]
+    },
+    {
+      "gid": "task5",
+      "name": "Orphaned task with no section",
+      "notes": "",
+      "completed": false,
+      "due_on": null,
+      "tags": [],
+      "permalink_url": "",
+      "memberships": []
+    }
+  ]
+}

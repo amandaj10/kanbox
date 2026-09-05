@@ -4,14 +4,26 @@ import json
 import unittest
 from pathlib import Path
 
-from kanbox.core import ChecklistItem, parse_trello_export, render_csv, render_markdown
+from kanbox.core import (
+    ChecklistItem,
+    parse_asana_export,
+    parse_trello_export,
+    render_csv,
+    render_markdown,
+)
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sample_board.json"
+ASANA_FIXTURE = Path(__file__).parent / "fixtures" / "sample_asana_board.json"
 
 
 def load_board():
     data = json.loads(FIXTURE.read_text())
     return parse_trello_export(data)
+
+
+def load_asana_board():
+    data = json.loads(ASANA_FIXTURE.read_text())
+    return parse_asana_export(data)
 
 
 class ParseTrelloExportTests(unittest.TestCase):
@@ -64,6 +76,62 @@ class ParseTrelloExportTests(unittest.TestCase):
     def test_card_without_checklist_has_empty_list(self):
         card = next(c for c in self.board.cards if c.name == "Ship v1.2")
         self.assertEqual(card.checklist_items, [])
+
+
+class ParseAsanaExportTests(unittest.TestCase):
+    def setUp(self):
+        self.board = load_asana_board()
+
+    def test_board_name_and_list_order(self):
+        self.assertEqual(self.board.name, "Marketing launch")
+        self.assertEqual(
+            self.board.list_order,
+            ["To do", "Doing", "Done", "(no section)"],
+        )
+
+    def test_card_count(self):
+        self.assertEqual(len(self.board.cards), 5)
+
+    def test_section_name_is_read_straight_off_the_membership(self):
+        card = next(c for c in self.board.cards if c.name == "Fix tracking pixel")
+        self.assertEqual(card.list_name, "Doing")
+
+    def test_task_with_no_membership_gets_placeholder(self):
+        card = next(c for c in self.board.cards if c.name.startswith("Orphaned"))
+        self.assertEqual(card.list_name, "(no section)")
+
+    def test_blank_tag_name_is_dropped(self):
+        card = next(c for c in self.board.cards if c.name == "Brief the design team")
+        self.assertEqual(card.labels, [])
+
+    def test_completed_flag_is_read(self):
+        card = next(c for c in self.board.cards if c.name == "Launch announcement email")
+        self.assertTrue(card.closed)
+
+    def test_untitled_board_when_name_missing(self):
+        board = parse_asana_export({"sections": [], "tasks": []})
+        self.assertEqual(board.name, "untitled board")
+
+    def test_subtasks_become_checklist_items_in_order(self):
+        card = next(c for c in self.board.cards if c.name == "Fix tracking pixel")
+        self.assertEqual(
+            card.checklist_items,
+            [
+                ChecklistItem(name="Reproduce in Safari", checked=True),
+                ChecklistItem(name="Ship fix", checked=False),
+            ],
+        )
+
+    def test_task_without_subtasks_has_empty_checklist(self):
+        card = next(c for c in self.board.cards if c.name == "Draft landing page copy")
+        self.assertEqual(card.checklist_items, [])
+
+    def test_renders_with_the_same_markdown_renderer(self):
+        output = render_markdown(self.board)
+        self.assertIn("## To do", output)
+        self.assertIn("- Draft landing page copy", output)
+        self.assertIn("  - [x] Reproduce in Safari", output)
+        self.assertNotIn("Launch announcement email", output)
 
 
 class RenderMarkdownTests(unittest.TestCase):

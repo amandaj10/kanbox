@@ -77,6 +77,48 @@ def parse_trello_export(data: dict) -> Board:
     return Board(name=data.get("name", "untitled board"), cards=cards, list_order=list_order)
 
 
+def parse_asana_export(data: dict) -> Board:
+    """Build a Board from Asana's project export (a project plus its tasks).
+
+    Unlike Trello, a task's section and subtasks are already inline on the
+    task rather than split across separate top-level arrays, so there's no
+    id table to resolve first -- we just read section.name and subtasks
+    straight off each task.
+    """
+    list_order = [s.get("name", "") for s in data.get("sections", [])]
+
+    cards = []
+    for t in data.get("tasks", []):
+        section_name = "(no section)"
+        memberships = t.get("memberships") or []
+        if memberships:
+            section = memberships[0].get("section") or {}
+            section_name = section.get("name") or section_name
+        if section_name not in list_order:
+            list_order.append(section_name)
+
+        tags = [tag.get("name", "") for tag in t.get("tags", [])]
+        checklist_items = [
+            ChecklistItem(name=sub.get("name", ""), checked=bool(sub.get("completed", False)))
+            for sub in t.get("subtasks", [])
+        ]
+
+        cards.append(
+            Card(
+                name=t.get("name", ""),
+                list_name=section_name,
+                description=t.get("notes", ""),
+                labels=[tag for tag in tags if tag],
+                due=t.get("due_on") or t.get("due_at"),
+                closed=bool(t.get("completed", False)),
+                url=t.get("permalink_url", ""),
+                checklist_items=checklist_items,
+            )
+        )
+
+    return Board(name=data.get("name", "untitled board"), cards=cards, list_order=list_order)
+
+
 def render_markdown(board: Board, include_closed: bool = False) -> str:
     lines = [f"# {board.name}", ""]
 
