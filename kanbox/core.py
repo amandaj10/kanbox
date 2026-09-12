@@ -2,6 +2,7 @@
 
 import csv
 import io
+import re
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -117,6 +118,61 @@ def parse_asana_export(data: dict) -> Board:
         )
 
     return Board(name=data.get("name", "untitled board"), cards=cards, list_order=list_order)
+
+
+def parse_jira_export(data: dict) -> Board:
+    """Build a Board from a Jira issue search export (the REST API's
+    /search response shape: a project plus a flat "issues" array).
+
+    An issue's column is fields.status, not a separate id table like
+    Trello's lists, so list_order is discovered from the order statuses
+    are first seen -- the same approach the Asana parser uses for
+    sections. fields.status.statusCategory.key is a fixed Jira
+    vocabulary ("new", "indeterminate", "done"), which is a far more
+    reliable "is this finished" signal than guessing from the
+    human-editable status name, so that's what decides closed/checked
+    rather than the name itself.
+    """
+    list_order = []
+    cards = []
+
+    def is_done(status):
+        return (status or {}).get("statusCategory", {}).get("key") == "done"
+
+    def browse_url(issue):
+        match = re.match(r"https?://[^/]+", issue.get("self", ""))
+        return f"{match.group(0)}/browse/{issue.get('key', '')}" if match else ""
+
+    for issue in data.get("issues", []):
+        fields = issue.get("fields", {})
+        status = fields.get("status") or {}
+        list_name = status.get("name", "(no status)")
+        if list_name not in list_order:
+            list_order.append(list_name)
+
+        checklist_items = [
+            ChecklistItem(
+                name=sub.get("fields", {}).get("summary", ""),
+                checked=is_done(sub.get("fields", {}).get("status")),
+            )
+            for sub in fields.get("subtasks", [])
+        ]
+
+        cards.append(
+            Card(
+                name=fields.get("summary", ""),
+                list_name=list_name,
+                description=fields.get("description") or "",
+                labels=[label for label in fields.get("labels", []) if label],
+                due=fields.get("duedate"),
+                closed=is_done(status),
+                url=browse_url(issue),
+                checklist_items=checklist_items,
+            )
+        )
+
+    project_name = data.get("project", {}).get("name")
+    return Board(name=project_name or "untitled board", cards=cards, list_order=list_order)
 
 
 def render_markdown(board: Board, include_closed: bool = False) -> str:

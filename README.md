@@ -57,6 +57,13 @@ Asana's project export is also supported -- pass `--source asana`:
 python -m kanbox project.json --source asana --format csv -o project.csv
 ```
 
+So is a Jira issue search export (the JSON you get back from the
+`/rest/api/2/search` endpoint, saved to a file) -- pass `--source jira`:
+
+```
+python -m kanbox issues.json --source jira --format csv -o project.csv
+```
+
 ## Library
 
 The CLI is a thin wrapper around a parser and a renderer, which you can use
@@ -71,10 +78,10 @@ board = parse_trello_export(data)
 print(render_markdown(board))
 ```
 
-Both `parse_trello_export` and `parse_asana_export` return the same `Board`
-of flat `Card` objects, so either one is a reasonable starting point for
-writing your own exporter (say, to a static site or a different task
-tracker's import format).
+`parse_trello_export`, `parse_asana_export`, and `parse_jira_export` all
+return the same `Board` of flat `Card` objects, so any one of them is a
+reasonable starting point for writing your own exporter (say, to a static
+site or a different task tracker's import format).
 
 ## Development
 
@@ -87,5 +94,5 @@ python -m unittest discover
 
 ## Status
 
-Trello and Asana export formats are supported so far, both feeding the same
-`Board` model. No third-party dependencies, standard library only.
+Trello, Asana, and Jira export formats are supported so far, all feeding the
+same `Board` model. No third-party dependencies, standard library only.

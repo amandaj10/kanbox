@@ -1,0 +1,78 @@
+{
+  "project": { "name": "Platform" },
+  "issues": [
+    {
+      "key": "PLAT-101",
+      "self": "https://example.atlassian.net/rest/api/2/issue/10001",
+      "fields": {
+        "summary": "Set up staging environment",
+        "description": "",
+        "status": { "name": "To Do", "statusCategory": { "key": "new" } },
+        "labels": ["infra"],
+        "duedate": null,
+        "subtasks": []
+      }
+    },
+    {
+      "key": "PLAT-102",
+      "self": "https://example.atlassian.net/rest/api/2/issue/10002",
+      "fields": {
+        "summary": "Write onboarding docs",
+        "description": "",
+        "status": { "name": "To Do", "statusCategory": { "key": "new" } },
+        "labels": [""],
+        "duedate": null,
+        "subtasks": []
+      }
+    },
+    {
+      "key": "PLAT-103",
+      "self": "https://example.atlassian.net/rest/api/2/issue/10003",
+      "fields": {
+        "summary": "Fix pagination bug",
+        "description": "Users report the third page is missing on mobile.",
+        "status": { "name": "In Progress", "statusCategory": { "key": "indeterminate" } },
+        "labels": ["backend"],
+        "duedate": "2026-08-28",
+        "subtasks": [
+          {
+            "fields": {
+              "summary": "Reproduce locally",
+              "status": { "name": "Done", "statusCategory": { "key": "done" } }
+            }
+          },
+          {
+            "fields": {
+              "summary": "Deploy fix",
+              "status": { "name": "To Do", "statusCategory": { "key": "new" } }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": "PLAT-104",
+      "self": "https://example.atlassian.net/rest/api/2/issue/10004",
+      "fields": {
+        "summary": "Ship v1.2",
+        "description": "",
+        "status": { "name": "Done", "statusCategory": { "key": "done" } },
+        "labels": [],
+        "duedate": null,
+        "subtasks": []
+      }
+    },
+    {
+      "key": "PLAT-105",
+      "self": "not-a-valid-url",
+      "fields": {
+        "summary": "Card with unparsable self link",
+        "description": "",
+        "status": { "name": "Blocked", "statusCategory": { "key": "new" } },
+        "labels": [],
+        "duedate": null,
+        "subtasks": []
+      }
+    }
+  ]
+}

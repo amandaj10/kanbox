@@ -8,6 +8,7 @@ from kanbox.cli import build_parser, main
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sample_board.json"
 ASANA_FIXTURE = Path(__file__).parent / "fixtures" / "sample_asana_board.json"
+JIRA_FIXTURE = Path(__file__).parent / "fixtures" / "sample_jira_board.json"
 
 
 class BuildParserTests(unittest.TestCase):
@@ -24,7 +25,7 @@ class BuildParserTests(unittest.TestCase):
 
     def test_unknown_source_is_rejected(self):
         with self.assertRaises(SystemExit):
-            build_parser().parse_args([str(FIXTURE), "-s", "jira"])
+            build_parser().parse_args([str(FIXTURE), "-s", "monday"])
 
 
 class MainTests(unittest.TestCase):
@@ -41,6 +42,13 @@ class MainTests(unittest.TestCase):
             status = main([str(ASANA_FIXTURE), "--source", "asana"])
         self.assertEqual(status, 0)
         self.assertTrue(buf.getvalue().startswith("# Marketing launch\n"))
+
+    def test_jira_source_reaches_the_parser(self):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            status = main([str(JIRA_FIXTURE), "--source", "jira"])
+        self.assertEqual(status, 0)
+        self.assertTrue(buf.getvalue().startswith("# Platform\n"))
 
     def test_csv_format_goes_to_stdout(self):
         buf = io.StringIO()

@@ -7,6 +7,7 @@ from pathlib import Path
 from kanbox.core import (
     ChecklistItem,
     parse_asana_export,
+    parse_jira_export,
     parse_trello_export,
     render_csv,
     render_markdown,
@@ -14,6 +15,7 @@ from kanbox.core import (
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sample_board.json"
 ASANA_FIXTURE = Path(__file__).parent / "fixtures" / "sample_asana_board.json"
+JIRA_FIXTURE = Path(__file__).parent / "fixtures" / "sample_jira_board.json"
 
 
 def load_board():
@@ -24,6 +26,11 @@ def load_board():
 def load_asana_board():
     data = json.loads(ASANA_FIXTURE.read_text())
     return parse_asana_export(data)
+
+
+def load_jira_board():
+    data = json.loads(JIRA_FIXTURE.read_text())
+    return parse_jira_export(data)
 
 
 class ParseTrelloExportTests(unittest.TestCase):
@@ -132,6 +139,67 @@ class ParseAsanaExportTests(unittest.TestCase):
         self.assertIn("- Draft landing page copy", output)
         self.assertIn("  - [x] Reproduce in Safari", output)
         self.assertNotIn("Launch announcement email", output)
+
+
+class ParseJiraExportTests(unittest.TestCase):
+    def setUp(self):
+        self.board = load_jira_board()
+
+    def test_board_name_comes_from_project(self):
+        self.assertEqual(self.board.name, "Platform")
+
+    def test_list_order_follows_first_appearance_of_each_status(self):
+        self.assertEqual(
+            self.board.list_order, ["To Do", "In Progress", "Done", "Blocked"]
+        )
+
+    def test_card_count(self):
+        self.assertEqual(len(self.board.cards), 5)
+
+    def test_blank_label_is_dropped(self):
+        card = next(c for c in self.board.cards if c.name == "Write onboarding docs")
+        self.assertEqual(card.labels, [])
+
+    def test_label_is_kept(self):
+        card = next(c for c in self.board.cards if c.name == "Set up staging environment")
+        self.assertEqual(card.labels, ["infra"])
+
+    def test_done_status_category_marks_card_closed(self):
+        card = next(c for c in self.board.cards if c.name == "Ship v1.2")
+        self.assertTrue(card.closed)
+
+    def test_non_done_status_category_leaves_card_open(self):
+        card = next(c for c in self.board.cards if c.name == "Set up staging environment")
+        self.assertFalse(card.closed)
+
+    def test_browse_url_is_built_from_the_self_link(self):
+        card = next(c for c in self.board.cards if c.name == "Fix pagination bug")
+        self.assertEqual(card.url, "https://example.atlassian.net/browse/PLAT-103")
+
+    def test_url_is_blank_when_self_link_is_unparsable(self):
+        card = next(c for c in self.board.cards if c.name == "Card with unparsable self link")
+        self.assertEqual(card.url, "")
+
+    def test_subtasks_become_checklist_items_using_status_category(self):
+        card = next(c for c in self.board.cards if c.name == "Fix pagination bug")
+        self.assertEqual(
+            card.checklist_items,
+            [
+                ChecklistItem(name="Reproduce locally", checked=True),
+                ChecklistItem(name="Deploy fix", checked=False),
+            ],
+        )
+
+    def test_untitled_board_when_project_missing(self):
+        board = parse_jira_export({"issues": []})
+        self.assertEqual(board.name, "untitled board")
+
+    def test_renders_with_the_same_markdown_renderer(self):
+        output = render_markdown(self.board)
+        self.assertIn("## To Do", output)
+        self.assertIn("- Set up staging environment", output)
+        self.assertIn("  - [x] Reproduce locally", output)
+        self.assertNotIn("Ship v1.2", output)
 
 
 class RenderMarkdownTests(unittest.TestCase):

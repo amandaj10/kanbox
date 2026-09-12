@@ -3,7 +3,13 @@ import json
 import sys
 from pathlib import Path
 
-from .core import parse_asana_export, parse_trello_export, render_csv, render_markdown
+from .core import (
+    parse_asana_export,
+    parse_jira_export,
+    parse_trello_export,
+    render_csv,
+    render_markdown,
+)
 
 RENDERERS = {
     "markdown": render_markdown,
@@ -13,13 +19,14 @@ RENDERERS = {
 PARSERS = {
     "trello": parse_trello_export,
     "asana": parse_asana_export,
+    "jira": parse_jira_export,
 }
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="kanbox",
-        description="Convert a Trello or Asana JSON export into a plain-text snapshot.",
+        description="Convert a Trello, Asana, or Jira JSON export into a plain-text snapshot.",
     )
     parser.add_argument("input", type=Path, help="path to a board export")
     parser.add_argument(

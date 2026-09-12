@@ -3,6 +3,7 @@ from .core import (
     Card,
     ChecklistItem,
     parse_asana_export,
+    parse_jira_export,
     parse_trello_export,
     render_csv,
     render_markdown,
@@ -16,6 +17,7 @@ __all__ = [
     "ChecklistItem",
     "parse_trello_export",
     "parse_asana_export",
+    "parse_jira_export",
     "render_markdown",
     "render_csv",
 ]
