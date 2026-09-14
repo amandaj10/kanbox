@@ -64,6 +64,37 @@ So is a Jira issue search export (the JSON you get back from the
 python -m kanbox issues.json --source jira --format csv -o project.csv
 ```
 
+## Comparing two snapshots
+
+If you've exported the same board twice -- say, once a month ago and once
+today -- `--diff` reports what changed between the two instead of rendering
+a full snapshot. The file passed to `--diff` is the older export; `input` is
+the newer one:
+
+```
+$ python -m kanbox board.json --diff board-last-month.json
+# Sprint planning (diff)
+
+## Added
+
+- Set up CI for the new service (Backlog)
+
+## Changed
+
+- Fix pagination bug
+  - moved: Backlog -> In progress
+  - due: (none) -> 2026-08-28T00:00:00.000Z
+  - checklist: 0/2 -> 1/2
+- Ship v1.2
+  - open -> closed
+```
+
+Cards are matched between the two exports by URL, which stays stable even
+if a card is renamed or moved to a different list. `--diff` works with
+`--source asana` and `--source jira` too, as long as both files are the same
+format. `--format` and `--include-closed` are ignored in diff mode -- a
+card being archived shows up as an `open -> closed` change instead.
+
 ## Library
 
 The CLI is a thin wrapper around a parser and a renderer, which you can use
@@ -81,7 +112,9 @@ print(render_markdown(board))
 `parse_trello_export`, `parse_asana_export`, and `parse_jira_export` all
 return the same `Board` of flat `Card` objects, so any one of them is a
 reasonable starting point for writing your own exporter (say, to a static
-site or a different task tracker's import format).
+site or a different task tracker's import format). `diff_boards(old, new)`
+returns a `BoardDiff`, and `render_diff` turns that into the same text
+`--diff` prints.
 
 ## Development
 

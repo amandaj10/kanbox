@@ -4,10 +4,12 @@ import sys
 from pathlib import Path
 
 from .core import (
+    diff_boards,
     parse_asana_export,
     parse_jira_export,
     parse_trello_export,
     render_csv,
+    render_diff,
     render_markdown,
 )
 
@@ -55,22 +57,43 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="include archived lists/cards in the output",
     )
+    parser.add_argument(
+        "--diff",
+        type=Path,
+        metavar="OLDER",
+        default=None,
+        help=(
+            "compare an earlier export (OLDER) against the input and print "
+            "what changed, instead of rendering a snapshot"
+        ),
+    )
     return parser
+
+
+def _load_json(path: Path):
+    return json.loads(path.read_text())
 
 
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
+    parse = PARSERS[args.source]
 
     try:
-        data = json.loads(args.input.read_text())
+        board = parse(_load_json(args.input))
     except (OSError, json.JSONDecodeError) as exc:
         print(f"kanbox: could not read {args.input}: {exc}", file=sys.stderr)
         return 1
 
-    parse = PARSERS[args.source]
-    board = parse(data)
-    render = RENDERERS[args.format]
-    output = render(board, include_closed=args.include_closed)
+    if args.diff:
+        try:
+            older_board = parse(_load_json(args.diff))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"kanbox: could not read {args.diff}: {exc}", file=sys.stderr)
+            return 1
+        output = render_diff(diff_boards(older_board, board))
+    else:
+        render = RENDERERS[args.format]
+        output = render(board, include_closed=args.include_closed)
 
     if args.output:
         args.output.write_text(output)

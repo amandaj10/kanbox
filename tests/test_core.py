@@ -6,20 +6,28 @@ from pathlib import Path
 
 from kanbox.core import (
     ChecklistItem,
+    diff_boards,
     parse_asana_export,
     parse_jira_export,
     parse_trello_export,
     render_csv,
+    render_diff,
     render_markdown,
 )
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sample_board.json"
+BEFORE_FIXTURE = Path(__file__).parent / "fixtures" / "sample_board_before.json"
 ASANA_FIXTURE = Path(__file__).parent / "fixtures" / "sample_asana_board.json"
 JIRA_FIXTURE = Path(__file__).parent / "fixtures" / "sample_jira_board.json"
 
 
 def load_board():
     data = json.loads(FIXTURE.read_text())
+    return parse_trello_export(data)
+
+
+def load_before_board():
+    data = json.loads(BEFORE_FIXTURE.read_text())
     return parse_trello_export(data)
 
 
@@ -280,6 +288,94 @@ class RenderCsvTests(unittest.TestCase):
         rows = self._rows(render_csv(self.board))
         row = next(row for row in rows if row[1] == "Write onboarding docs")
         self.assertEqual(row[5], "")
+
+
+class DiffBoardsTests(unittest.TestCase):
+    def setUp(self):
+        self.diff = diff_boards(load_before_board(), load_board())
+
+    def test_card_only_in_new_snapshot_is_added(self):
+        self.assertEqual(
+            [c.name for c in self.diff.added], ["Orphaned card from a deleted list"]
+        )
+
+    def test_card_only_in_old_snapshot_is_removed(self):
+        self.assertEqual(
+            [c.name for c in self.diff.removed], ["Retire the old staging box"]
+        )
+
+    def test_unchanged_card_is_not_reported(self):
+        changed_names = [new.name for _old, new in self.diff.changed]
+        self.assertNotIn("Set up staging environment", changed_names)
+
+    def test_card_with_multiple_field_changes_is_reported_once(self):
+        old_card, new_card = next(
+            (o, n) for o, n in self.diff.changed if n.name == "Fix pagination bug"
+        )
+        self.assertEqual(old_card.list_name, "Backlog")
+        self.assertEqual(new_card.list_name, "In progress")
+        self.assertEqual(new_card.due, "2026-08-28T00:00:00.000Z")
+
+    def test_closed_flag_change_is_reported(self):
+        old_card, new_card = next(
+            (o, n) for o, n in self.diff.changed if n.name == "Ship v1.2"
+        )
+        self.assertFalse(old_card.closed)
+        self.assertTrue(new_card.closed)
+
+    def test_card_with_no_matching_url_falls_back_to_list_and_name(self):
+        old = parse_trello_export(
+            {
+                "lists": [{"id": "l1", "name": "Backlog"}],
+                "cards": [{"id": "c1", "name": "No url card", "idList": "l1"}],
+            }
+        )
+        new = parse_trello_export(
+            {
+                "lists": [{"id": "l1", "name": "Backlog"}],
+                "cards": [
+                    {
+                        "id": "c1",
+                        "name": "No url card",
+                        "idList": "l1",
+                        "desc": "now has a description",
+                    }
+                ],
+            }
+        )
+        diff = diff_boards(old, new)
+        self.assertEqual(len(diff.changed), 1)
+        self.assertEqual(diff.added, [])
+        self.assertEqual(diff.removed, [])
+
+
+class RenderDiffTests(unittest.TestCase):
+    def setUp(self):
+        self.output = render_diff(diff_boards(load_before_board(), load_board()))
+
+    def test_header_uses_new_boards_name(self):
+        self.assertTrue(self.output.startswith("# Sprint planning (diff)\n"))
+
+    def test_added_and_removed_sections_present(self):
+        self.assertIn("## Added", self.output)
+        self.assertIn("- Orphaned card from a deleted list", self.output)
+        self.assertIn("## Removed", self.output)
+        self.assertIn("- Retire the old staging box", self.output)
+
+    def test_changed_section_lists_each_kind_of_field_change(self):
+        self.assertIn("## Changed", self.output)
+        self.assertIn("- Fix pagination bug", self.output)
+        self.assertIn("  - moved: Backlog -> In progress", self.output)
+        self.assertIn("  - due: (none) -> 2026-08-28T00:00:00.000Z", self.output)
+        self.assertIn("  - labels: (none) -> red", self.output)
+        self.assertIn("  - checklist: 0/2 -> 1/2", self.output)
+        self.assertIn("- Ship v1.2", self.output)
+        self.assertIn("  - open -> closed", self.output)
+
+    def test_no_changes_reports_that_plainly(self):
+        board = load_board()
+        output = render_diff(diff_boards(board, board))
+        self.assertEqual(output, "# Sprint planning (diff)\n\nNo changes.\n")
 
 
 if __name__ == "__main__":

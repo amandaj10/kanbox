@@ -7,6 +7,7 @@ from pathlib import Path
 from kanbox.cli import build_parser, main
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sample_board.json"
+BEFORE_FIXTURE = Path(__file__).parent / "fixtures" / "sample_board_before.json"
 ASANA_FIXTURE = Path(__file__).parent / "fixtures" / "sample_asana_board.json"
 JIRA_FIXTURE = Path(__file__).parent / "fixtures" / "sample_jira_board.json"
 
@@ -18,6 +19,7 @@ class BuildParserTests(unittest.TestCase):
         self.assertEqual(args.format, "markdown")
         self.assertIsNone(args.output)
         self.assertFalse(args.include_closed)
+        self.assertIsNone(args.diff)
 
     def test_unknown_format_is_rejected(self):
         with self.assertRaises(SystemExit):
@@ -72,6 +74,24 @@ class MainTests(unittest.TestCase):
             self.assertEqual(status, 0)
             self.assertEqual(buf.getvalue(), "")
             self.assertTrue(out_path.read_text().startswith("# Sprint planning\n"))
+
+    def test_diff_flag_prints_a_diff_instead_of_a_snapshot(self):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            status = main([str(FIXTURE), "--diff", str(BEFORE_FIXTURE)])
+        self.assertEqual(status, 0)
+        output = buf.getvalue()
+        self.assertTrue(output.startswith("# Sprint planning (diff)\n"))
+        self.assertIn("## Added", output)
+        self.assertIn("## Removed", output)
+        self.assertIn("## Changed", output)
+
+    def test_diff_flag_reports_error_for_missing_older_file(self):
+        buf = io.StringIO()
+        with contextlib.redirect_stderr(buf):
+            status = main([str(FIXTURE), "--diff", "/no/such/file.json"])
+        self.assertEqual(status, 1)
+        self.assertIn("could not read", buf.getvalue())
 
     def test_missing_input_file_reports_error_and_exits_nonzero(self):
         buf = io.StringIO()

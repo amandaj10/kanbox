@@ -1,0 +1,73 @@
+{
+  "name": "Sprint planning",
+  "lists": [
+    { "id": "list1", "name": "Backlog" },
+    { "id": "list2", "name": "In progress" },
+    { "id": "list3", "name": "Done" },
+    { "id": "list4", "name": "Blocked" }
+  ],
+  "cards": [
+    {
+      "id": "card1",
+      "name": "Set up staging environment",
+      "desc": "",
+      "idList": "list1",
+      "labels": [{ "name": "infra", "color": "blue" }],
+      "due": null,
+      "closed": false,
+      "shortUrl": "https://trello.com/c/card1"
+    },
+    {
+      "id": "card2",
+      "name": "Write onboarding docs",
+      "desc": "",
+      "idList": "list1",
+      "labels": [],
+      "due": null,
+      "closed": false,
+      "shortUrl": "https://trello.com/c/card2"
+    },
+    {
+      "id": "card3",
+      "name": "Fix pagination bug",
+      "desc": "Users report the third page is missing on mobile.",
+      "idList": "list1",
+      "labels": [],
+      "due": null,
+      "closed": false,
+      "shortUrl": "https://trello.com/c/card3"
+    },
+    {
+      "id": "card4",
+      "name": "Ship v1.2",
+      "desc": "",
+      "idList": "list3",
+      "labels": [{ "name": "", "color": "" }],
+      "due": null,
+      "closed": false,
+      "shortUrl": "https://trello.com/c/card4"
+    },
+    {
+      "id": "card6",
+      "name": "Retire the old staging box",
+      "desc": "",
+      "idList": "list4",
+      "labels": [],
+      "due": null,
+      "closed": false,
+      "shortUrl": "https://trello.com/c/card6"
+    }
+  ],
+  "checklists": [
+    {
+      "id": "checklist1",
+      "name": "Rollout steps",
+      "idCard": "card3",
+      "pos": 1,
+      "checkItems": [
+        { "id": "item2", "name": "Deploy fix", "state": "incomplete", "pos": 2 },
+        { "id": "item1", "name": "Reproduce locally", "state": "incomplete", "pos": 1 }
+      ]
+    }
+  ]
+}

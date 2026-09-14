@@ -175,6 +175,114 @@ def parse_jira_export(data: dict) -> Board:
     return Board(name=project_name or "untitled board", cards=cards, list_order=list_order)
 
 
+@dataclass
+class BoardDiff:
+    board_name: str
+    added: list = field(default_factory=list)
+    removed: list = field(default_factory=list)
+    changed: list = field(default_factory=list)
+
+
+def _card_key(card: Card) -> str:
+    """Identify the "same" card across two snapshots.
+
+    A card's Trello/Asana/Jira id never makes it onto the Card model --
+    render_markdown and render_csv never needed it -- but url is stable
+    across edits, renames, and list moves, so it's the best identity
+    available here. The rare card with no url (blank in all three parsers)
+    falls back to list + name, which won't catch a rename but won't raise
+    either.
+    """
+    return card.url or f"{card.list_name}\x00{card.name}"
+
+
+def _card_fields(card: Card) -> tuple:
+    return (
+        card.list_name,
+        card.description,
+        tuple(card.labels),
+        card.due,
+        card.closed,
+        tuple((item.name, item.checked) for item in card.checklist_items),
+    )
+
+
+def diff_boards(old: Board, new: Board) -> BoardDiff:
+    """Compare two snapshots of the same board and report what changed.
+
+    Meant for two exports of the same board taken at different times, not
+    for comparing unrelated boards -- there's no cross-board card identity
+    to match on.
+    """
+    old_by_key = {_card_key(c): c for c in old.cards}
+    new_by_key = {_card_key(c): c for c in new.cards}
+
+    diff = BoardDiff(board_name=new.name)
+    for key, card in new_by_key.items():
+        if key not in old_by_key:
+            diff.added.append(card)
+    for key, card in old_by_key.items():
+        if key not in new_by_key:
+            diff.removed.append(card)
+    for key, new_card in new_by_key.items():
+        old_card = old_by_key.get(key)
+        if old_card is not None and _card_fields(old_card) != _card_fields(new_card):
+            diff.changed.append((old_card, new_card))
+    return diff
+
+
+def render_diff(diff: BoardDiff) -> str:
+    lines = [f"# {diff.board_name} (diff)", ""]
+
+    if diff.added:
+        lines.append("## Added")
+        lines.append("")
+        for card in diff.added:
+            lines.append(f"- {card.name} ({card.list_name})")
+        lines.append("")
+
+    if diff.removed:
+        lines.append("## Removed")
+        lines.append("")
+        for card in diff.removed:
+            lines.append(f"- {card.name} ({card.list_name})")
+        lines.append("")
+
+    if diff.changed:
+        lines.append("## Changed")
+        lines.append("")
+        for old_card, new_card in diff.changed:
+            lines.append(f"- {new_card.name}")
+            if old_card.list_name != new_card.list_name:
+                lines.append(f"  - moved: {old_card.list_name} -> {new_card.list_name}")
+            if old_card.closed != new_card.closed:
+                was = "closed" if old_card.closed else "open"
+                now = "closed" if new_card.closed else "open"
+                lines.append(f"  - {was} -> {now}")
+            if old_card.due != new_card.due:
+                lines.append(f"  - due: {old_card.due or '(none)'} -> {new_card.due or '(none)'}")
+            if old_card.labels != new_card.labels:
+                old_labels = ", ".join(old_card.labels) or "(none)"
+                new_labels = ", ".join(new_card.labels) or "(none)"
+                lines.append(f"  - labels: {old_labels} -> {new_labels}")
+            if old_card.description != new_card.description:
+                lines.append("  - description changed")
+            if old_card.checklist_items != new_card.checklist_items:
+                old_done = sum(1 for i in old_card.checklist_items if i.checked)
+                new_done = sum(1 for i in new_card.checklist_items if i.checked)
+                lines.append(
+                    f"  - checklist: {old_done}/{len(old_card.checklist_items)} "
+                    f"-> {new_done}/{len(new_card.checklist_items)}"
+                )
+        lines.append("")
+
+    if not (diff.added or diff.removed or diff.changed):
+        lines.append("No changes.")
+        lines.append("")
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def render_markdown(board: Board, include_closed: bool = False) -> str:
     lines = [f"# {board.name}", ""]
 
