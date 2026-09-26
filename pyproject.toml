@@ -1,11 +1,26 @@
 [project]
 name = "kanbox"
 version = "0.1.0"
-description = "Turn a Trello JSON export into a plain-text markdown or CSV snapshot"
+description = "Turn a Trello, Asana, or Jira export into a plain-text markdown or CSV snapshot"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "amandaj10" }]
+keywords = ["trello", "asana", "jira", "markdown", "csv", "export", "archive"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Office/Business",
+    "Topic :: Utilities",
+]
+
+[project.urls]
+Homepage = "https://github.com/amandaj10/kanbox"
+Repository = "https://github.com/amandaj10/kanbox"
 
 [project.scripts]
 kanbox = "kanbox.cli:main"
@@ -13,3 +28,6 @@ kanbox = "kanbox.cli:main"
 [build-system]
 requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["kanbox*"]
